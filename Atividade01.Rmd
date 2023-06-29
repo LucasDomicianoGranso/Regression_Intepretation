@@ -1,0 +1,379 @@
+---
+title: "ME906 - Métodos em Aprendizado Supervisionado de Máquina"
+subtitle: "Atividade 01"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE)
+
+options(scipen=9999)
+
+```
+
+```{r,include=FALSE}
+library(ISLR)
+library(ggplot2)
+library(PerformanceAnalytics)
+library(dplyr)
+library(car)
+library(lmtest)
+```
+
+
+## Parte 1
+
+Considere o conjunto de dados `Auto` do pacote `ISLR`. Ajuste um modelo de regressão linear simples considerando `mpg` como variável resposta e `horsepower` como variável preditora.
+
+```{r}
+reg<-lm(mpg ~ horsepower,data = Auto)
+
+summary(reg)
+```
+
+**1.  Há relação entre a variável preditora e a resposta? **
+
+Ajustou-se um modelo cuja variável preditora Y é dada por $\beta 01$ e $\beta 02$. Sendo o primeiro estimador que diz respeito ao intercepto assume o valor de 39.935861, enquanto ao $\beta 02$ assume o valor de -0.157845.
+
+No modelo pode-se verificar que todos os coeficientes são significativos. Portanto pode-se asssumir uma relação linear entre a variável preditora e a variável resposta , assumindo assim a forma: Yi=39.935861-0.157845 $\cdot$ Xi
+
+**2. Quão forte é a relação entre a variável preditora e a resposta?**
+
+Para testar a força da relação entre a variável preditora e a resposta temos que usar o coeficiente de Correlação de Pearson
+
+```{r}
+cor(Auto$mpg, Auto$horsepower, method ="pearson")
+```
+
+A variável resposta (mpg) e a variável preditora (horsepower) possuem uma forte relação negativa, do qual o coeficiente assume o valor de -0.7784268.
+
+
+**3.  A relação entre a variável preditora e a resposta é positiva ou negativa? Interprete o coeficiente angular do modelo ajustado.**
+
+É negativa, como pode-se concluir ao calcular o coeficiente de Pearson. E ao levar em consideração o estimador para horsepower na reta de regressão podemos dizer que a cada unidade que a variável 'horsepower' vaumenta uma unidade a variável 'mpg' (variável resposta) diminui em 0.157845 unidades.
+
+
+
+**4.  Qual é o valor médio estimado para `mpg` quando `horsepower` é 98? Qual é o intervalo de confiança de 95%?**
+
+Temos que aplicar Y = 39.935861 - 0.15784 $\cdot$ 98 = 24.46705, pois o valor médio de Y quando horsepower é igual à 98 conseguimos obter substituindo em Xi (Yi=39.935861-0.157845 $\cdot$ Xi).
+
+Para isso aplicamos a função predict utilizando interval="confidence"
+Calculando o intervalo de confiança com  95% de confiança:  IC(23.97308, 24.96108). 
+
+
+```{r}
+newdata <- data.frame(horsepower = c(98))
+
+#newdata<- data.frame(horsepower= Auto$horsepower)
+conf <- predict(reg,newdata,interval = "confidence",level = 0.95)
+conf#[98]
+
+``` 
+
+**5.  Qual é o valor predito para `mpg` quando `horsepower` é 98? Qual o intervalo de predição de 95%?**
+
+
+Usando a função predict consegue-se a média de mpg 24.46708 e o intervalo de confinça de 95% IC(14.8094,34.12476)
+
+```{r}
+newdata <- data.frame(horsepower = c(98))
+
+#newdata<- data.frame(horsepower= Auto$horsepower)
+
+pre<- predict(reg,newdata,interval = "prediction",level = 0.95)
+pre
+```
+
+
+Para o calculo do valor predito usamos a mesma ferramenta para conseguir o valor médio de Y e assim chegamos em 24.46708 , no qual teremos um intervalo de predição de 95% igual IC(23.08347,25.85063).
+
+**6.  Apresente um gráfico com as observações da variável resposta e da variável preditora. Acrescente a reta do modelo ajustado.**
+```{r}
+ggplot()+
+  geom_point(aes(Auto$mpg,Auto$horsepower))+
+  xlab("mpg")+
+  ylab("horsepower")+
+  geom_smooth(method = lm, se = FALSE,aes(Auto$mpg,Auto$horsepower),color = "red")+
+  theme_minimal()
+```
+
+Os pontos apresentam uma forma curva (comportamento logaritmico negativo) entre mpg (variável preditora) e horsepower (variável resposta). Portanto o uso da reta de regressão foi ajustado com o intuito de ajudar na predição de valores e o comportamento dos resultados
+
+**7.  Produza gráficos de diagnósticos do modelo ajustado. Apresente os gráficos e comente em detalhes problemas encontrados.**
+
+Os gráficos de diagnóstico de modelos são:
+
+
+```{r}
+plot(reg)
+```
+
+
+No primeiro gráfico (Residuals vs Fitted) pode-se perceber um certo comportamento sobretudo curvo ao redor da média do qual pode ser causado pela não-linearidade dos resíduos.
+
+No segundo gráfico (Normal Q-Q) podemos perceber que os resíduos não seguem a distribuição normal, pois se encontram, principalmente na calda da função, distantes do ideal.Para confirmar esta suposição será necessário a aplicação do teste de Shapiro Wilks.
+```{r}
+shapiro.test(reg$residuals)
+```  
+
+O teste de Shapiro usa como HIpotese Nula que os dados pertencem à uma populçaõ normalmente distribuída. Com isso rejeitamos a hipotese nula quando o p-valor for menos que 0.5 (nível de significância).
+
+Portanto confirmamos que os resíduos não estão normalmente distribuídos pois o p-valor do teste de Shapiro Wilks é de 0.00008734.
+
+
+Para o terceiro gráfico (Scale-Location) que é usado para verificar a presença da hesterocedasticidade do modelo , podemos observar que pelo fato dos pontos não estatarem distribuídos de forma aleatória afimro que se trata de um modelo não heterocesdastico , o que significa que não possui variância constante.
+
+
+Para o quarto gráfico (Resíduals vs leverage) nos mostram pontos de discrepância que afetam no modelo.
+
+Devido ao fato de apresentar problemas de homecedasticidade e de normalidade nos resíduos , recomenda-se que se efetue transformações na variável com o intuito de melhorar o modelo .Mesmo que seja difícil dizer quais transformações deverão ser feitas apenas observando os gráficos, temos como opções Box-Cox $\log _e (Y)$ , $\sqrt Y$ e etc.
+
+
+## Parte 2
+
+Considere o conjunto de dados `Auto` do pacote `ISLR`.
+
+
+**1.  Apresente uma figura contendo todos os gráficos de dispersão entre as variáveis numéricas no conjunto de dados, duas a duas. Apresente a matriz de correlações entre as variáveis numéricas do conjunto de dados.**
+```{r}
+Auto_dropado = Auto %>%
+  select(-name,-cylinders,-origin)
+#Lembre-se disso seu animal
+chart.Correlation(Auto_dropado,histogram = TRUE,pch = 19)
+cor(Auto_dropado)
+```
+A matriz de correlação e o gráfico só irão apresentar as variáveis numéricas.
+
+Matriz de correlação:
+
+
+                    mpg displacement horsepower     weight acceleration       year
+mpg           1.0000000   -0.8051269 -0.7784268 -0.8322442    0.4233285  0.5805410
+displacement -0.8051269    1.0000000  0.8972570  0.9329944   -0.5438005 -0.3698552
+horsepower   -0.7784268    0.8972570  1.0000000  0.8645377   -0.6891955 -0.4163615
+weight       -0.8322442    0.9329944  0.8645377  1.0000000   -0.4168392 -0.3091199
+acceleration  0.4233285   -0.5438005 -0.6891955 -0.4168392    1.0000000  0.2903161
+year          0.5805410   -0.3698552 -0.4163615 -0.3091199    0.2903161  1.0000000
+
+
+**2. Ajuste um modelo de regressão linear múltipla considerando `mpg` como variável resposta e as demais variáveis numéricas como preditoras. **
+
+
+```{r}
+#reg21= lm(mpg~cylinders*displacement*horsepower*weight*acceleration*year*origin,data = Auto_dropado)
+#summary(reg21)
+reg2 = lm(mpg~.,data = Auto_dropado)
+summary(reg2)
+
+
+
+```
+
+
+Os coeficientes que de weight ,year além do intercepto foram significantes para o ajuste do modelo , ou seja , foram os únicas que possuem p-valor menor que 0.05. 
+
+
+No entanto teremos um ajuste de modelo de regressão que fica :
+
+Yi = -15.4353143 + 0.0027817 $\cdot$ Xi1 + 0.0010201 $\cdot$ Xi2 -0.0068738 $\cdot$ Xi3 +0.0903236 $\cdot$ Xi4 + 0.7541153 $\cdot$ Xi5
+
+
+**3. Há relação entre as variáveis preditoras e a variável resposta?**
+
+Sim, sendo negativas em sua maioria exceto por: displacement, acceleration , year e horsepower das quais obtiveram p-valor maior que 0.5 (nível significância).
+
+Ao observar as saídas do R conclui-se que os coeficientes correspondentes à displacement, acceleration, year e horsepower possuem uma relação positiva com mpg (variável resposta) , ou seja , quando aumentamos uma unidade da variável i,aumentamos a variável resposta em $\beta i$. Enquanto a relação entre a variável resposta weight se trata de uma relação negativa. Porém as variáveis displacement,horsepower e acceleration não são significativas para o modelo, já que apresentam um p-valor para o teste t meior que 0.05 (nível de significância).
+
+
+**4. Quais variáveis preditoras apresentam relação estatisticamente significante com a variável resposta?**
+
+Segundo o modelo de regressão feito, apenas as variáveis de weight e year foram estatísticamente significantes. Com isso podemos usar o método de seleção de modelos AIC usando o Stepwise Regression na direção foward , com o intuito de estabelecer um melhor modelo para a questão , utilizando assim as variáveis preditoras necessárias . 
+
+```{r}
+
+total = lm(mpg~.,data=Auto_dropado)
+nada = lm(mpg ~ 1, data = Auto_dropado)
+step(nada,scope=list(upper=total,lower=nada),direction='forward',trace=TRUE)
+
+```
+
+Temos que o ajuste do modelo usando apenas weight e year possuem o menor AIC e portanto uma maior qualidade e simplicidade de modelo.
+
+**5. O que o coeficiente para a variável `year` sugere? Interprete em detalhes.**
+
+A variável preditora 'year' é significativa , dado que seu p-valor para o teste T apresentou um valor menor que 0.5 e com  isso seu coeficiente é de 0.750773. Portanto , podemos dizer que a cada unidade que acrescida no coeficiante de year , a variável resposta sofre um impacto de 0.7541153.
+
+**6.  Produza gráficos de diagnósticos do modelo ajustado. Apresente os gráficos e comente em detalhes problemas encontrados.**
+
+
+```{r}
+
+plot(reg2)
+
+```
+
+
+
+No primeiro gráfico (Residuals vs Fitted) pode-se perceber um certo comportamento sobretudo curvo ao redor da média, do qual pode ser causado pela não-linearidade. 
+
+No segundo gráfico (Normal Q-Q) podemos perceber que os resíduos em parte não seguem a distribuição normal, pois se env-contram , principalmente na calda da função distantes do ideal. Mas para confirmar esta suposição será necessário a aplicação do teste de Shapiro Wilks.
+```{r}
+shapiro.test(reg2$residuals)
+```
+Assim como explicado na primeira parte , temos mais uma vez p-valor < 0.05 , portanto não temos evidências para rejeitar a hipotese nula que é de possuir uma população normalmente distribuída.
+
+Para o terceiro gráfico (Scale-Location) é usado para verificar a presença da hesterocedasticidade do modelo e percebe que os pontos estão distribuídos de forma aleatória ao redor da média significa que a variância é constante e não possuimos problemas de homocedasticidade.
+
+
+Para o quarto gráfico (Resíduals vs leverage) nos mostram pontos de discrepância que afetam no modelo, que são pontos influenciantes.
+
+
+
+**7. Há interações significativas? Explique em detalhes como chegou a essa conclusão.**
+
+Veremos se há alguma interação significante ao aplicando o método de seleção de variáveis AIC no qual irá nos retornar o modelo mais simples.
+
+```{r}
+
+
+total = lm(mpg~mpg*displacement*horsepower*weight*acceleration*year,data=Auto_dropado)
+nada = lm(mpg ~ 1, data = Auto_dropado)
+step(nada,scope=list(upper=total,lower=nada),direction='forward',trace=TRUE)
+
+
+```
+
+
+Conseguimos que as iterações entre horsepower e Year, Horsepower e acceleration , weight com acceleration e year, dado que o modelo com essas variáveis possuem o menor AIC e portanto é o modelo que possui a maior qualidade juntamente com a simplicidade do mesmo. 
+
+
+## Parte 3
+
+**1. Rode os seguintes comandos:**
+
+```{r}
+set.seed(1)
+x1 = runif(100)
+x2 = 0.5 * x1 + rnorm(100)/10
+y = 2 + 2*x1 + 0.3*x2 + rnorm(100)
+```
+
+**A última linha corresponde a um modelo linear no qual `y` é uma função de `x1` e `x2`. Escreva matematicamente a forma do modelo de regressão, em detalhes. Defina todos os parâmetros. Quais os valores dos coeficientes do modelo?**
+
+Temos que: y = 2 + 2 $\cdot$ x1 + 0.3 $\cdot$ x2 + e , sendo e = erro ~ N(0,1).
+
+Parâmetros:
+
+
+$\hat{\beta}_0$ = 2
+
+$\hat{\beta}_1$ = 2
+
+$\hat{\beta}_2$ = 0.3
+
+
+**2. Qual a correlação entre `x1` e `x2`? Apresente um diagrama de dispersão das duas variáveis. Comente.**
+
+```{r}
+ggplot()+
+  geom_point(aes(x1,x2))+
+  geom_smooth(aes(x1,x2),method = lm, se = FALSE)+
+  theme_light()
+y = seq(from =1, to = length(x1)*length(x1))
+contador = 0
+for (i in x1) {
+  for (j in x2){
+    y[contador] = 2 + 2*i + 0.3*j
+    contador= contador + 1
+  }
+}
+```
+
+
+Podemos verificar uma correlção positiva entre os x's , na qual pode ser confirmar ao verificar que a correlação de pearson entre as variáveis assume o valor de 0.8351212.
+
+
+```{r}
+cor(x1,x2,method = "pearson")
+```
+**3. Utilizando os dados gerados, ajuste um modelo de regressão múltipla para predizer `y` usando `x1` e `x2`. Descreva os resultados obtidos. Quais os valores de $\hat{\beta}_0$, $\hat{\beta}_1$ e $\hat{\beta}_2$?**
+
+Como o conjunto de x1's , x2's e y's já foi feito, ajustamos um modelo nos quais conseguimos os seguintes resultados:
+
+```{r}
+dados <- data.frame(x1,x2,y)
+reg3 <- lm(y~x1+x2,data= dados)
+summary(reg3)
+```
+
+O ajuste feito nos retorna: Y = 3.139 + 11.333 $\cdot$ x1 -19.034 $\cdot$ x2 
+
+$\hat{\beta}_0$ = 3.139
+
+$\hat{\beta}_1$ = 11.333
+
+$\hat{\beta}_2$ = -19.034
+
+Temos que a cada unidade somada á $X_i$ , é somado à variável resposta $\hat{\beta}_i$.
+
+
+**4. Como os valores $\hat{\beta}_0$, $\hat{\beta}_1$ e $\hat{\beta}_2$ estão relacionados aos valores verdadeiros de $\beta_0$, $\beta_1$ e $\beta_2$? Comente também sobre a precisão dessas estimativas.**
+
+
+Para isso devemos aplicar o teste da correlação Pearson, do qual aplicaremos e interpretaresmso a seguir:
+
+```{r}
+cor(x1, x2, method ="pearson")
+
+```
+
+
+
+
+**5. Temos evidências para rejeitar $H_0: \beta_1=0$?**
+
+  Na aplicação da função lm temos como uma das saidas o resultado do teste t ,que possui como Hipotese Nula:$\beta_1=0$ ,para cada estimador. No caso de $\beta_1$ o p-valor é de 0.0969 e portanto não temos evidências para rejeitar $H_0: \beta_1=0$ à um nível de significância de 0.05.
+
+**6. Temos evidências para rejeitar $H_0: \beta_2=0$?**
+
+Para o $\beta_2$ o p-valor do teste assume o valor de 0.0761 e portanto não temos evidências para rejeitar a hipotese nula: $H_0: \beta_2=0$ à um nível de significância de 0.05.
+
+**7. Ajuste um modelo de regressão linear simples para predizer `y` usando `x1`. Comente os resultados. Temos evidências para rejeitar $H_0: \beta_1=0$?**
+
+```{r}
+reg31 <- lm(y~x1,data= dados)
+summary(reg31)
+
+```
+
+Como o p-valor do teste t é de  0.745 mais uma vez não rejeitamos a Hipotese Nula à um nível de significância de 0.05. Com isso , $\hat{\beta_1}$ não é significante para o omdelo ajustado.
+
+
+
+
+**8. Ajuste um modelo de regressão linear simples para predizer `y` usando `x2`. Comente os resultados. Temos evidências para rejeitar $H_0: \beta_1=0$?**
+
+```{r}
+#y2 = seq(from =1, to = length(x2))
+#contador = 0
+#for (j in x2){
+#    
+#  y2[contador] = 2 + 0.3*j
+#  contador= contador + 1
+#}
+#summary(lm(y2~x2))
+reg32 <- lm(y~x2,data= dados)
+summary(reg32)
+```
+
+
+Como o p-valor do teste t é de 0.48149 mais uma vez rejeitamos a Hipotese Nula à um nível de significância de 0.05. Com isso , $\hat{\beta_1}$ não é significante para o omdelo ajustado.
+
+
+**9. Os resultados dos itens 7 e 8 contradizem os resultados dos itens 5 e 6? Explique.**
+
+Os resultados dos items 7 e 8 são diferentes de 5 e 6 em relação ao nível de significância dos parâmetros e também em relação ao coeficiente ,pois há uma alta correlação entre as variáveis x1 e x2, o qual nos traz um problema de multicolinearidade. Com isso caem em contradição. 
+
+
