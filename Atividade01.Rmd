@@ -1,5 +1,5 @@
 ---
-title: "ME906 - Métodos em Aprendizado Supervisionado de Máquina"
+title: "Regressão - Aplicação e Interpretação"
 subtitle: "Atividade 01"
 output: word_document
 ---
@@ -24,7 +24,8 @@ library(lmtest)
 
 ## Parte 1
 
-Considere o conjunto de dados `Auto` do pacote `ISLR`. Ajuste um modelo de regressão linear simples considerando `mpg` como variável resposta e `horsepower` como variável preditora.
+
+Considering `Auto` pfrom `ISLR` package. Fit a linear regression model considering `mpg` as a target variable and `horsepower` as predict variable
 
 ```{r}
 reg<-lm(mpg ~ horsepower,data = Auto)
